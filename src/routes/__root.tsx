@@ -72,15 +72,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { title: "Satellite Watcher" },
       { name: "description", content: "Satellite Watcher displays real-time satellite positions over Romania on an interactive map." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "Satellite Watcher" },
       { property: "og:description", content: "Satellite Watcher displays real-time satellite positions over Romania on an interactive map." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Satellite Watcher" },
       { name: "twitter:description", content: "Satellite Watcher displays real-time satellite positions over Romania on an interactive map." },
     ],
     links: [
