@@ -43,13 +43,29 @@ export const ROMANIA_BOUNDS = {
 };
 export const ROMANIA_CENTER: [number, number] = [45.9, 25.0];
 
-export function isOverRomania(lat: number, lon: number) {
-  return (
-    lat >= ROMANIA_BOUNDS.minLat &&
-    lat <= ROMANIA_BOUNDS.maxLat &&
-    lon >= ROMANIA_BOUNDS.minLon &&
-    lon <= ROMANIA_BOUNDS.maxLon
-  );
+const EARTH_R = 6371; // km
+
+/** Great-circle distance in km between two lat/lon points. */
+function greatCircleKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/** Footprint radius (km) on Earth's surface for a satellite at altKm. */
+export function footprintRadiusKm(altKm: number): number {
+  const halfAngle = Math.acos(EARTH_R / (EARTH_R + altKm));
+  return EARTH_R * halfAngle;
+}
+
+/** A satellite is "above Romania" if Romania's center is inside its footprint. */
+export function isOverRomania(lat: number, lon: number, altKm: number) {
+  const dist = greatCircleKm(lat, lon, ROMANIA_CENTER[0], ROMANIA_CENTER[1]);
+  return dist <= footprintRadiusKm(altKm);
 }
 
 /** Parse classic 3-line TLE blocks. */
