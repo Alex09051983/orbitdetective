@@ -18,6 +18,18 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,OPTIONS",
+  "access-control-allow-headers": "content-type",
+};
+
+const ALLOWED_PROXY_TARGETS = new Set([
+  "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle",
+  "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle",
+  "https://celestrak.org/pub/satcat.csv",
+]);
+
 function brandedErrorResponse(): Response {
   return new Response(renderErrorPage(), {
     status: 500,
@@ -69,6 +81,39 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+
+if (url.pathname === "/api/proxy" && request.method === "OPTIONS") {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+if (url.pathname === "/api/proxy") {
+  const target = url.searchParams.get("target") ?? "";
+  if (!ALLOWED_PROXY_TARGETS.has(target)) {
+    return new Response("Unsupported target", {
+      status: 400,
+      headers: { ...CORS_HEADERS, "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  try {
+    const upstream = await fetch(target);
+    const text = await upstream.text();
+    return new Response(text, {
+      status: upstream.status,
+      headers: {
+        ...CORS_HEADERS,
+        "content-type": upstream.headers.get("content-type") ?? "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=300",
+      },
+    });
+  } catch {
+    return new Response("Proxy fetch failed", {
+      status: 502,
+      headers: { ...CORS_HEADERS, "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+}
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

@@ -1,12 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import {
-  computePosition,
-  isOverRomania,
-  type SatPosition,
-  type SatcatInfo,
-  type TleEntry,
-} from "@/lib/satellites";
+import { computePosition, type SatPosition, type SatcatInfo, type TleEntry } from "@/lib/satellites";
 import { fetchAllTle, fetchSatcat } from "@/lib/satelliteSources";
 import SatelliteDetailPanel from "@/components/SatelliteDetailPanel";
 
@@ -118,18 +112,19 @@ function HomePageClient() {
   }, [tle, filter]);
 
   // Compute positions of those over Romania
-  const positionsOverRO = useMemo<SatPosition[]>(() => {
+  const positionsVisible = useMemo<SatPosition[]>(() => {
     const out: SatPosition[] = [];
     for (const entry of filteredTle) {
       const p = computePosition(entry, now);
-      if (p && isOverRomania(p.lat, p.lon, p.altKm)) out.push(p);
+      if (p) out.push(p);
     }
-    // Sort: stations first, then by altitude
     out.sort((a, b) => Number(b.isStation) - Number(a.isStation) || a.altKm - b.altKm);
     return out;
-  }, [filteredTle, now]);
+}, [filteredTle, now]);
 
   const selectedEntry = selectedId != null ? tleById.get(selectedId) : undefined;
+  const hasTleData = tle.length > 0;
+  const hasFilteredData = filteredTle.length > 0;
 
   return (
     <div className="relative min-h-screen">
@@ -160,7 +155,7 @@ function HomePageClient() {
             <div className="text-right">
               <div className="font-mono text-xs text-muted-foreground">Vizibili</div>
               <div className="font-mono text-sm tabular-nums text-accent">
-                {positionsOverRO.length}
+                {positionsVisible.length}
               </div>
             </div>
           </div>
@@ -198,7 +193,7 @@ function HomePageClient() {
             {!loading ? (
               <Suspense fallback={<MapSkeleton />}>
                 <SatelliteMap
-                  positions={positionsOverRO}
+                  positions={positionsVisible}
                   tleById={tleById}
                   selectedId={selectedId}
                   onSelect={setSelectedId}
@@ -217,10 +212,21 @@ function HomePageClient() {
 
           {/* List below map */}
           <section className="mt-6">
+            <div className="mb-3 grid grid-cols-1 gap-2 rounded-md border border-border bg-card/40 p-3 sm:grid-cols-3">
+              <div className="font-mono text-[11px] text-muted-foreground">
+                TLE total: <span className="text-foreground">{tle.length}</span>
+              </div>
+              <div className="font-mono text-[11px] text-muted-foreground">
+               TLE după filtru: <span className="text-foreground">{filteredTle.length}</span>
+              </div>
+              <div className="font-mono text-[11px] text-muted-foreground">
+               SATCAT: <span className="text-foreground">{satcat.size}</span>
+              </div>
+            </div>
             <h2 className="mb-3 font-mono text-[10px] uppercase tracking-[0.25em] text-accent">
-              Acum deasupra României ({positionsOverRO.length})
+              Acum deasupra României ({positionsVisible.length})
             </h2>
-            {positionsOverRO.length === 0 ? (
+            {positionsVisible.length === 0 ? (
               <p className="rounded-md border border-border bg-card/40 p-4 text-sm text-muted-foreground">
                 {loading
                   ? "Se încarcă cataloagele de sateliți de la CelesTrak…"
@@ -228,7 +234,7 @@ function HomePageClient() {
               </p>
             ) : (
               <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {positionsOverRO.slice(0, 30).map((p) => (
+                {positionsVisible.slice(0, 30).map((p) => (
                   <li key={p.noradId}>
                     <button
                       onClick={() => setSelectedId(p.noradId)}
@@ -258,9 +264,9 @@ function HomePageClient() {
                 ))}
               </ul>
             )}
-            {positionsOverRO.length > 30 && (
+            {positionsVisible.length > 30 && (
               <p className="mt-2 text-center font-mono text-[10px] text-muted-foreground">
-                + {positionsOverRO.length - 30} alți sateliți pe hartă
+                + {positionsVisible.length - 30} alți sateliți pe hartă
               </p>
             )}
           </section>

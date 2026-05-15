@@ -26,9 +26,14 @@ interface RawTleCache {
   activeText: string;
 }
 
+function proxiedUrl(url: string): string {
+  if (typeof window === "undefined") return url;
+  return `/api/proxy?target=${encodeURIComponent(url)}`;
+}
+
 async function fetchTextOrEmpty(url: string): Promise<string> {
   try {
-    const r = await fetch(url);
+    const r = await fetch(proxiedUrl(url));
     if (!r.ok) return "";
     return await r.text();
   } catch {
@@ -92,7 +97,7 @@ export async function fetchSatcat(): Promise<Map<number, SatcatInfo>> {
     return satcatCache.map;
   }
   try {
-    const text = await fetch(SATCAT_URL).then((r) => r.text());
+    const text = await fetch(proxiedUrl(SATCAT_URL)).then((r) => r.text());
     const map = new Map<number, SatcatInfo>();
     const lines = text.split(/\r?\n/);
     // Header: OBJECT_NAME,OBJECT_ID,NORAD_CAT_ID,OBJECT_TYPE,OPS_STATUS_CODE,OWNER,LAUNCH_DATE,LAUNCH_SITE,DECAY_DATE,PERIOD,INCLINATION,APOGEE,PERIGEE,RCS,DATA_STATUS_CODE,ORBIT_CENTER,ORBIT_TYPE
