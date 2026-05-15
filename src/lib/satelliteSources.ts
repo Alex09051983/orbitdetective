@@ -18,10 +18,7 @@ interface CachedSatcat {
 let tleCache: CachedTle | null = null;
 let satcatCache: CachedSatcat | null = null;
 const TWO_HOURS = 2 * 60 * 60 * 1000;
-
-const TWO_HOURS = 2 * 60 * 60 * 1000;
 const TLE_LS_KEY = "orbitro:tle:v1";
-const SATCAT_LS_KEY = "orbitro:satcat:v1";
 
 interface RawTleCache {
   fetchedAt: number;
