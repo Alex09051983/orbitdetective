@@ -122,7 +122,7 @@ function HomePageClient() {
     const out: SatPosition[] = [];
     for (const entry of filteredTle) {
       const p = computePosition(entry, now);
-      if (p && isOverRomania(p.lat, p.lon)) out.push(p);
+      if (p && isOverRomania(p.lat, p.lon, p.altKm)) out.push(p);
     }
     // Sort: stations first, then by altitude
     out.sort((a, b) => Number(b.isStation) - Number(a.isStation) || a.altKm - b.altKm);
