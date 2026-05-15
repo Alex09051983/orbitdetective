@@ -19,16 +19,71 @@ let tleCache: CachedTle | null = null;
 let satcatCache: CachedSatcat | null = null;
 const TWO_HOURS = 2 * 60 * 60 * 1000;
 
+const TWO_HOURS = 2 * 60 * 60 * 1000;
+const TLE_LS_KEY = "orbitro:tle:v1";
+const SATCAT_LS_KEY = "orbitro:satcat:v1";
+
+interface RawTleCache {
+  fetchedAt: number;
+  stationsText: string;
+  activeText: string;
+}
+
+async function fetchTextOrEmpty(url: string): Promise<string> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return "";
+    return await r.text();
+  } catch {
+    return "";
+  }
+}
+
+function loadLocal<T>(key: string): T | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+function saveLocal(key: string, value: unknown) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
 export async function fetchAllTle(): Promise<TleEntry[]> {
   if (tleCache && Date.now() - tleCache.fetchedAt < TWO_HOURS) {
     return tleCache.entries;
   }
-  const [stationsRes, activeRes] = await Promise.all([
-    fetch(TLE_STATIONS_URL).then((r) => r.text()),
-    fetch(TLE_ACTIVE_URL).then((r) => r.text()),
-  ]);
-  const stations = parseTle(stationsRes, true);
-  const active = parseTle(activeRes, false);
+  const persisted = loadLocal<RawTleCache>(TLE_LS_KEY);
+  const fresh = !persisted || Date.now() - persisted.fetchedAt >= TWO_HOURS;
+
+  let stationsText = persisted?.stationsText ?? "";
+  let activeText = persisted?.activeText ?? "";
+
+  if (fresh) {
+    const [s, a] = await Promise.all([
+      fetchTextOrEmpty(TLE_STATIONS_URL),
+      fetchTextOrEmpty(TLE_ACTIVE_URL),
+    ]);
+    // CelesTrak returns 403 with text body when rate-limited — keep persisted instead
+    if (s && !s.includes("GP data has not updated")) stationsText = s;
+    if (a && !a.includes("GP data has not updated")) activeText = a;
+    saveLocal(TLE_LS_KEY, {
+      fetchedAt: Date.now(),
+      stationsText,
+      activeText,
+    } satisfies RawTleCache);
+  }
+
+  const stations = parseTle(stationsText, true);
+  const active = parseTle(activeText, false);
   const stationIds = new Set(stations.map((s) => s.noradId));
   const merged = [...stations, ...active.filter((a) => !stationIds.has(a.noradId))];
   tleCache = { fetchedAt: Date.now(), entries: merged };
