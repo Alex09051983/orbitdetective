@@ -46,6 +46,28 @@ function categoryOf(name: string): Filter[] {
 
 function HomePage() {
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <p className="mt-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Inițializare tracking orbital…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <HomePageClient />;
+}
+
+function HomePageClient() {
   const [tle, setTle] = useState<TleEntry[]>([]);
   const [satcat, setSatcat] = useState<Map<number, SatcatInfo>>(new Map());
   const [error, setError] = useState<string | null>(null);
@@ -53,10 +75,6 @@ function HomePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Fetch TLE + SATCAT once
   useEffect(() => {
