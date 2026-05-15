@@ -195,7 +195,7 @@ function HomePageClient() {
       <main className="relative z-10">
         <div className="relative mx-auto max-w-7xl px-5 py-5">
           <div className="relative h-[calc(100vh-220px)] min-h-[520px] overflow-hidden rounded-xl border border-border shadow-2xl">
-            {mounted && !loading ? (
+            {!loading ? (
               <Suspense fallback={<MapSkeleton />}>
                 <SatelliteMap
                   positions={positionsOverRO}
